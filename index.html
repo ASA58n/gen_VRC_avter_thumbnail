@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VRCアバターサムネイル生成</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #f0f0f0;
+        }
+
+        #canvasContainer {
+            width: 70%;
+            aspect-ratio: 2/1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 1px solid #ccc;
+            overflow: hidden;
+            margin: 0 auto;
+            background-color: #fff;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #overlayIcons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .overlay-icon {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            cursor: pointer;
+        }
+
+        #controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #loadingOverlay p {
+            color: white;
+            font-size: 24px;
+        }
+
+        #colorPicker {
+            margin-right: 10px;
+        }
+
+        button,
+        input[type="number"],
+        select {
+            height: 30px;
+        }
+
+        input[type="number"] {
+            width: 70px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loadingOverlay" style="display: none;">
+        <p>読み込み中...</p>
+    </div>
+    <h1 style="text-align: center;">VRCアバターサムネイル生成</h1>
+    <div style="text-align: center;">
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
+    <div id="canvasContainer">
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="overlayIcons"></div>
+    <div id="controls">
+        <input type="color" id="colorPicker" value="#000000">
+        <button id="changeColorBtn">SVGの色を変更</button>
+        <select id="formatSelect">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+        </select>
+        <button id="downloadBtn">画像をダウンロード</button>
+        <div>
+            <label for="outputWidth">出力幅:</label>
+            <input type="number" id="outputWidth" value="1200" min="1">
+            <label for="outputHeight">出力高さ:</label>
+            <input type="number" id="outputHeight" value="600" min="1">
+            <button id="updateSizeBtn">サイズ更新</button>
+        </div>
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const overlayIconsDiv = document.getElementById('overlayIcons');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const canvas = new fabric.Canvas('canvas', { selection: true });
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const colorPicker = document.getElementById('colorPicker');
+        const changeColorBtn = document.getElementById('changeColorBtn');
+        const outputWidth = document.getElementById('outputWidth');
+        const outputHeight = document.getElementById('outputHeight');
+        const updateSizeBtn = document.getElementById('updateSizeBtn');
+        const formatSelect = document.getElementById('formatSelect');
+        let overlays = [];
+        let baseImageUploaded = false;
+        let baseImage = null;
+        let darkOverlay = null;
+        let downloadArea = null;
+        let DOWNLOAD_WIDTH = 1200;
+        let DOWNLOAD_HEIGHT = 600;
+        const DISPLAY_SCALE = 0.7; // 70%のスケール
+
+        // サイズ更新ボタンのイベントリスナー
+        updateSizeBtn.addEventListener('click', function () {
+            DOWNLOAD_WIDTH = parseInt(outputWidth.value, 10);
+            DOWNLOAD_HEIGHT = parseInt(outputHeight.value, 10);
+            updateCanvasSize();
+        });
+
+        function updateCanvasSize() {
+            const containerRect = canvasContainer.getBoundingClientRect();
+            const containerWidth = containerRect.width;
+            const containerHeight = containerRect.height;
+            const aspectRatio = DOWNLOAD_WIDTH / DOWNLOAD_HEIGHT;
+
+            let newWidth, newHeight;
+            if (containerWidth / containerHeight > aspectRatio) {
+                newHeight = containerHeight;
+                newWidth = newHeight * aspectRatio;
+            } else {
+                newWidth = containerWidth;
+                newHeight = newWidth / aspectRatio;
+            }
+
+            canvas.setDimensions({
+                width: newWidth,
+                height: newHeight
+            });
+
+            if (baseImage) {
+                const resizedDimensions = resizeImage(baseImage, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
+                baseImage.scaleToWidth(resizedDimensions.width * (newWidth / DOWNLOAD_WIDTH));
+                baseImage.scaleToHeight(resizedDimensions.height * (newHeight / DOWNLOAD_HEIGHT));
+                baseImage.center();
+            }
+
+            updateDarkOverlay();
+            canvas.renderAll();
+        }
+
+        // 画像をリサイズする関数
+        function resizeImage(img, maxWidth, maxHeight) {
+            let width = img.width;
+            let height = img.height;
+            let scaleFactor = 1;
+
+            if (width / height > maxWidth / maxHeight) {
+                if (width > maxWidth) {
+                    scaleFactor = maxWidth / width;
+                }
+            } else {
+                if (height > maxHeight) {
+                    scaleFactor = maxHeight / height;
+                }
+            }
+
+            return {
+                width: width * scaleFactor,
+                height: height * scaleFactor
+            };
+        }
+
+        // SVGの色を変更する関数
+        function changeSVGColor(obj, color) {
+            if (obj.type === 'group') {
+                obj.getObjects().forEach(subObj => changeSVGColor(subObj, color));
+            } else if (obj.type === 'path' || obj.type === 'line' || obj.type === 'polygon' || obj.type === 'polyline') {
+                if (obj.fill && obj.fill !== 'none') {
+                    obj.set('fill', color);
+                }
+                if (obj.stroke && obj.stroke !== 'none') {
+                    obj.set('stroke', color);
+                }
+            }
+        }
+
+        // SVGオブジェクトかどうかを判定する関数
+        function isSVGObject(obj) {
+            if (!obj) return false;
+            if (obj.type === 'group') {
+                return obj.getObjects().some(subObj => isSVGObject(subObj));
+            }
+            return ['path', 'line', 'polygon', 'polyline'].includes(obj.type);
+        }
+
+        // 色変更ボタンのイベントリスナー
+        changeColorBtn.addEventListener('click', function () {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject && isSVGObject(activeObject)) {
+                changeSVGColor(activeObject, colorPicker.value);
+                canvas.renderAll();
+            } else {
+                alert('SVGオブジェクトを選択してください。');
+            }
+        });
+
+        function addOverlay(url) {
+            showLoading();
+            fabric.loadSVGFromURL(url, function (objects, options) {
+                const svgObject = fabric.util.groupSVGElements(objects, options);
+                const canvasSize = Math.min(canvas.width, canvas.height);
+                const scaleFactor = canvasSize * 0.15 / Math.max(svgObject.width, svgObject.height);
+                svgObject.scale(scaleFactor);
+
+                svgObject.set({
+                    left: canvas.width / 2,
+                    top: canvas.height / 2,
+                    originX: 'center',
+                    originY: 'center',
+                    selectable: true,
+                    evented: true
+                });
+
+                canvas.add(svgObject);
+                canvas.setActiveObject(svgObject);
+                canvas.renderAll();
+                hideLoading();
+            });
+        }
+
+        function resizeCanvas() {
+            const containerRect = canvasContainer.getBoundingClientRect();
+            const containerWidth = containerRect.width;
+            const containerHeight = containerRect.height;
+
+            canvas.setDimensions({
+                width: containerWidth,
+                height: containerHeight
+            });
+
+            updateDarkOverlay();
+            canvas.renderAll();
+        }
+
+        function updateDarkOverlay() {
+            if (darkOverlay) {
+                canvas.remove(darkOverlay);
+            }
+            if (downloadArea) {
+                canvas.remove(downloadArea);
+            }
+
+            const downloadAreaWidth = canvas.width * DISPLAY_SCALE;
+            const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
+            const left = (canvas.width - downloadAreaWidth) / 2;
+            const top = (canvas.height - downloadAreaHeight) / 2;
+
+            darkOverlay = new fabric.Rect({
+                left: 0,
+                top: 0,
+                width: canvas.width,
+                height: canvas.height,
+                fill: 'rgba(0, 0, 0, 0.5)',
+                selectable: false,
+                evented: false
+            });
+
+            downloadArea = new fabric.Rect({
+                left: left,
+                top: top,
+                width: downloadAreaWidth,
+                height: downloadAreaHeight,
+                fill: 'rgba(255, 255, 255, 0)',
+                stroke: 'rgba(255, 255, 255, 0.5)',
+                strokeWidth: 2,
+                selectable: false,
+                evented: false
+            });
+
+            canvas.add(darkOverlay);
+            canvas.add(downloadArea);
+            canvas.sendToBack(darkOverlay);
+            canvas.bringToFront(downloadArea);
+        }
+
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        imageUpload.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            showLoading();
+
+            reader.onload = function (event) {
+                fabric.Image.fromURL(event.target.result, function (img) {
+                    // 画像をリサイズ
+                    const resizedDimensions = resizeImage(img, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
+                    img.scaleToWidth(resizedDimensions.width);
+                    img.scaleToHeight(resizedDimensions.height);
+
+                    // 既存のベース画像があれば削除
+                    if (baseImage) {
+                        canvas.remove(baseImage);
+                    }
+
+                    // 新しいベース画像を追加
+                    baseImage = img;
+                    baseImage.set({
+                        left: (canvas.width - resizedDimensions.width) / 2,
+                        top: (canvas.height - resizedDimensions.height) / 2,
+                        selectable: true,
+                        evented: true
+                    });
+
+                    canvas.add(baseImage);
+                    canvas.sendToBack(baseImage);
+                    baseImageUploaded = true;
+
+                    updateCanvasSize();
+                    hideLoading();
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+
+        downloadBtn.addEventListener('click', function () {
+            if (baseImageUploaded) {
+                showLoading();
+
+                const downloadAreaWidth = canvas.width * DISPLAY_SCALE;
+                const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
+                const left = (canvas.width - downloadAreaWidth) / 2;
+                const top = (canvas.height - downloadAreaHeight) / 2;
+
+                // ダークオーバーレイとダウンロードエリアを一時的に非表示にする
+                darkOverlay.visible = false;
+                downloadArea.visible = false;
+                canvas.renderAll();
+
+                // キャンバスの内容を一時的なキャンバスに描画
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = DOWNLOAD_WIDTH;
+                tempCanvas.height = DOWNLOAD_HEIGHT;
+                const tempContext = tempCanvas.getContext('2d');
+
+                const dataURL = canvas.toDataURL({
+                    format: 'png',
+                    quality: 1,
+                    left: left,
+                    top: top,
+                    width: downloadAreaWidth,
+                    height: downloadAreaHeight
+                });
+
+                const img = new Image();
+                img.onload = function () {
+                    tempContext.drawImage(img, 0, 0, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
+
+                    const format = formatSelect.value;
+                    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+                    const quality = format === 'jpeg' ? 0.9 : 1; // JPEG の場合は品質を指定
+                    const finalDataURL = tempCanvas.toDataURL(mimeType, quality);
+
+                    const link = document.createElement('a');
+                    link.download = `vrc-avatar-thumbnail.${format}`;
+                    link.href = finalDataURL;
+                    link.click();
+
+                    // ダークオーバーレイとダウンロードエリアを再表示する
+                    darkOverlay.visible = true;
+                    downloadArea.visible = true;
+                    canvas.renderAll();
+
+                    hideLoading();
+                };
+                img.src = dataURL;
+            } else {
+                alert('ベース画像をアップロードしてください。');
+            }
+        });
+
+        // オブジェクトの選択と選択解除機能
+        let lastClickTime = 0;
+        const doubleClickDelay = 300; // ミリ秒
+
+        canvas.on('mouse:down', function (options) {
+            const currentTime = new Date().getTime();
+            const timeDiff = currentTime - lastClickTime;
+
+            if (options.target) {
+                if (timeDiff < doubleClickDelay) {
+                    // ダブルクリック：アクティブ状態を解除
+                    canvas.discardActiveObject();
+                } else {
+                    // シングルクリック：オブジェクトを選択
+                    canvas.setActiveObject(options.target);
+                }
+            } else {
+                // 空白部分をクリック：アクティブ状態を解除
+                canvas.discardActiveObject();
+            }
+
+            canvas.renderAll();
+            lastClickTime = currentTime;
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // 設定ファイルの読み込みと初期化
+        async function loadConfig() {
+            try {
+                const response = await fetch('./config/image_config.json');
+                const config = await response.json();
+                overlays = config.overlayImages;
+                createOverlayIcons();
+            } catch (error) {
+                console.error('設定ファイルの読み込みに失敗しました:', error);
+                alert('設定ファイルの読み込みに失敗しました。');
+            }
+        }
+
+        function createOverlayIcons() {
+            overlayIconsDiv.innerHTML = '';
+            overlays.forEach((overlayUrl) => {
+                const img = document.createElement('img');
+                img.src = overlayUrl;
+                img.className = 'overlay-icon';
+                img.addEventListener('click', () => {
+                    if (baseImageUploaded) {
+                        addOverlay(overlayUrl);
+                    } else {
+                        alert('ベース画像をアップロードしてください。');
+                    }
+                });
+                overlayIconsDiv.appendChild(img);
+            });
+        }
+
+        loadConfig();
+        updateCanvasSize(); // 初期化時にもキャンバスをリサイズ
+    </script>
+</body>
+
+</html>
