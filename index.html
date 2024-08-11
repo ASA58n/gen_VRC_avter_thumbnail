@@ -447,9 +447,13 @@
         // 設定ファイルの読み込みと初期化
         async function loadConfig() {
             try {
+                console.log('設定ファイルを読み込み中...');
                 const response = await fetch('./config/image_config.json');
+                console.log('レスポンス:', response);
                 const config = await response.json();
+                console.log('設定:', config);
                 overlays = config.overlayImages;
+                console.log('オーバーレイ:', overlays);
                 createOverlayIcons();
             } catch (error) {
                 console.error('設定ファイルの読み込みに失敗しました:', error);
