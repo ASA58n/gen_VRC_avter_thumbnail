@@ -130,6 +130,24 @@
             padding: 20px;
             border-radius: var(--border-radius);
         }
+        .instruction {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .credit {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+        }
+        .credit a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .credit a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +156,11 @@
         <div class="card">
             <label for="imageUpload" class="file-upload-label">ベース画像をアップロード</label>
             <input type="file" id="imageUpload" accept="image/*">
+            <div class="instruction">
+                <p>ベース画像はダブルクリックをするとその位置で確定できます。</p>
+                <p>真ん中に表示されている白枠が実際に描画される範囲になります。</p>
+                <p>出したアイコンの削除はまだないので、描画範囲外においてください。</p>
+            </div>
         </div>
         <div class="card">
             <div id="canvasContainer">
@@ -151,11 +174,6 @@
             <div id="controls">
                 <input type="color" id="colorPicker" value="#000000">
                 <button id="changeColorBtn">SVGの色を変更</button>
-                <select id="formatSelect">
-                    <option value="png">PNG</option>
-                    <option value="jpeg">JPEG</option>
-                </select>
-                <button id="downloadBtn">画像をダウンロード</button>
                 <div>
                     <label for="outputWidth">出力幅:</label>
                     <input type="number" id="outputWidth" value="1200" min="1">
@@ -163,7 +181,16 @@
                     <input type="number" id="outputHeight" value="600" min="1">
                     <button id="updateSizeBtn">サイズ更新</button>
                 </div>
+                <select id="formatSelect">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+                <button id="downloadBtn">画像をダウンロード</button>
             </div>
+        </div>
+        <div class="credit">
+            <p>Created by <a href="https://lit.link/5m0958ngomoku" target="_blank">5M09_58n ごもく</a></p>
+            <p>使っていただきありがとうございます！！ 要望があればツイッター(X)のDMなどにお願いします！！</p>
         </div>
     </div>
     <div id="loadingOverlay" style="display: none;">
