@@ -256,7 +256,7 @@
         function changeSVGColor(obj, color) {
             if (obj.type === 'group') {
                 obj.getObjects().forEach(subObj => changeSVGColor(subObj, color));
-            } else if (obj.type === 'path' || obj.type === 'line' || obj.type === 'polygon' || obj.type === 'polyline') {
+            } else if (['path', 'line', 'polygon', 'polyline', 'circle', 'ellipse', 'rect'].includes(obj.type)) {
                 if (obj.fill && obj.fill !== 'none') {
                     obj.set('fill', color);
                 }
@@ -272,7 +272,7 @@
             if (obj.type === 'group') {
                 return obj.getObjects().some(subObj => isSVGObject(subObj));
             }
-            return ['path', 'line', 'polygon', 'polyline'].includes(obj.type);
+            return ['path', 'line', 'polygon', 'polyline', 'circle', 'ellipse', 'rect'].includes(obj.type);
         }
 
         // 色変更ボタンのイベントリスナー
