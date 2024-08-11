@@ -1,61 +1,116 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VRCアバターサムネイル生成</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            background-color: #f0f0f0;
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5a623;
+            --background-color: #f0f4f8;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --border-radius: 8px;
         }
-
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
         #canvasContainer {
-            width: 70%;
+            width: 100%;
             aspect-ratio: 2/1;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
-            border: 1px solid #ccc;
+            background-color: #e0e0e0;
+            border-radius: var(--border-radius);
             overflow: hidden;
-            margin: 0 auto;
-            background-color: #fff;
         }
-
         #canvas {
-            width: 100%;
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
         }
-
         #overlayIcons {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-top: 20px;
             justify-content: center;
+            margin-top: 20px;
         }
-
         .overlay-icon {
             width: 50px;
             height: 50px;
             object-fit: contain;
             cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: transform 0.2s ease-in-out;
         }
-
+        .overlay-icon:hover {
+            transform: scale(1.1);
+        }
         #controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
+            justify-content: center;
             align-items: center;
             margin-top: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
         }
-
+        button, select {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        button:hover, select:hover {
+            background-color: #3a7bc8;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload-label {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .file-upload-label:hover {
+            background-color: #e69616;
+        }
+        input[type="color"], input[type="number"] {
+            border: 1px solid #ccc;
+            border-radius: var(--border-radius);
+            padding: 5px;
+        }
         #loadingOverlay {
             position: fixed;
             top: 0;
@@ -68,55 +123,51 @@
             align-items: center;
             z-index: 1000;
         }
-
         #loadingOverlay p {
             color: white;
             font-size: 24px;
-        }
-
-        #colorPicker {
-            margin-right: 10px;
-        }
-
-        button,
-        input[type="number"],
-        select {
-            height: 30px;
-        }
-
-        input[type="number"] {
-            width: 70px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: var(--border-radius);
         }
     </style>
 </head>
-
 <body>
+    <div class="container">
+        <h1>VRCアバターサムネイル生成</h1>
+        <div class="card">
+            <label for="imageUpload" class="file-upload-label">ベース画像をアップロード</label>
+            <input type="file" id="imageUpload" accept="image/*">
+        </div>
+        <div class="card">
+            <div id="canvasContainer">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <div id="overlayIcons"></div>
+        </div>
+        <div class="card">
+            <div id="controls">
+                <input type="color" id="colorPicker" value="#000000">
+                <button id="changeColorBtn">SVGの色を変更</button>
+                <select id="formatSelect">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+                <button id="downloadBtn">画像をダウンロード</button>
+                <div>
+                    <label for="outputWidth">出力幅:</label>
+                    <input type="number" id="outputWidth" value="1200" min="1">
+                    <label for="outputHeight">出力高さ:</label>
+                    <input type="number" id="outputHeight" value="600" min="1">
+                    <button id="updateSizeBtn">サイズ更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="loadingOverlay" style="display: none;">
         <p>読み込み中...</p>
-    </div>
-    <h1 style="text-align: center;">VRCアバターサムネイル生成</h1>
-    <div style="text-align: center;">
-        <input type="file" id="imageUpload" accept="image/*">
-    </div>
-    <div id="canvasContainer">
-        <canvas id="canvas"></canvas>
-    </div>
-    <div id="overlayIcons"></div>
-    <div id="controls">
-        <input type="color" id="colorPicker" value="#000000">
-        <button id="changeColorBtn">SVGの色を変更</button>
-        <select id="formatSelect">
-            <option value="png">PNG</option>
-            <option value="jpeg">JPEG</option>
-        </select>
-        <button id="downloadBtn">画像をダウンロード</button>
-        <div>
-            <label for="outputWidth">出力幅:</label>
-            <input type="number" id="outputWidth" value="1200" min="1">
-            <label for="outputHeight">出力高さ:</label>
-            <input type="number" id="outputHeight" value="600" min="1">
-            <button id="updateSizeBtn">サイズ更新</button>
-        </div>
     </div>
 
     <script>
