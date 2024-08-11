@@ -1,7 +1,11 @@
 {
     "overlayImages": [
+        "./images/box.svg",
+        "./images/circle.svg",
+        "./images/camera.svg",
+        "./images/Shutter.svg",
         "./images/pen.svg",
-        "./images/katana.svg",
-        "./images/wing.svg"
+        "./images/wing.svg",
+        "./images/katana.svg"
     ]
 }
