@@ -227,6 +227,7 @@
         let downloadArea = null;
         let DOWNLOAD_WIDTH = 1200;
         let DOWNLOAD_HEIGHT = 900;
+        let guidelineObject;
         const DISPLAY_SCALE = 0.7; // 70%のスケール
 
         // サイズ更新ボタンのイベントリスナー
@@ -241,7 +242,7 @@
             const containerWidth = containerRect.width;
             const containerHeight = containerRect.height;
             const aspectRatio = DOWNLOAD_WIDTH / DOWNLOAD_HEIGHT;
-
+        
             let newWidth, newHeight;
             if (containerWidth / containerHeight > aspectRatio) {
                 newHeight = containerHeight;
@@ -250,23 +251,44 @@
                 newWidth = containerWidth;
                 newHeight = newWidth / aspectRatio;
             }
-
+        
             canvas.setDimensions({
                 width: newWidth,
                 height: newHeight
             });
-
+        
             if (baseImage) {
                 const resizedDimensions = resizeImage(baseImage, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
                 baseImage.scaleToWidth(resizedDimensions.width * (newWidth / DOWNLOAD_WIDTH));
                 baseImage.scaleToHeight(resizedDimensions.height * (newHeight / DOWNLOAD_HEIGHT));
                 baseImage.center();
             }
-
+        
             updateDarkOverlay();
+            updateGuideline();
             canvas.renderAll();
         }
 
+        function updateGuideline() {
+            if (guidelineObject) {
+                canvas.remove(guidelineObject);
+            }
+        
+            const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
+            const top = (canvas.height - downloadAreaHeight) / 2;
+            const lineY = top + downloadAreaHeight - (150 * canvas.height / DOWNLOAD_HEIGHT);
+        
+            guidelineObject = new fabric.Line([0, lineY, canvas.width, lineY], {
+                stroke: 'rgba(255, 255, 255, 0.2)',
+                strokeWidth: 1,
+                selectable: false,
+                evented: false
+            });
+        
+            canvas.add(guidelineObject);
+            canvas.bringToFront(guidelineObject);
+        }
+        
         // 画像をリサイズする関数
         function resizeImage(img, maxWidth, maxHeight) {
             let width = img.width;
@@ -459,9 +481,10 @@
                 const left = (canvas.width - downloadAreaWidth) / 2;
                 const top = (canvas.height - downloadAreaHeight) / 2;
         
-                // ダークオーバーレイとダウンロードエリアを一時的に非表示にする
+                // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを一時的に非表示にする
                 darkOverlay.visible = false;
                 downloadArea.visible = false;
+                guidelineObject.visible = false;
                 canvas.renderAll();
         
                 // キャンバスの内容を一時的なキャンバスに描画
@@ -495,21 +518,21 @@
                     const link = document.createElement('a');
                     link.download = `vrc-avatar-thumbnail.${format}`;
                     link.href = finalDataURL;
-                    link.click();
-        
-                    // ダークオーバーレイとダウンロードエリアを再表示する
-                    darkOverlay.visible = true;
-                    downloadArea.visible = true;
-                    canvas.renderAll();
-        
-                    hideLoading();
+                    link.onclick = function() {
+                        // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを再表示する
+                        darkOverlay.visible = true;
+                        downloadArea.visible = true;
+                        guidelineObject.visible = true;
+                        canvas.renderAll();
+            
+                        hideLoading();
+                    };
                 };
                 img.src = dataURL;
             } else {
                 alert('ベース画像をアップロードしてください。');
             }
         });
-
         // オブジェクトの選択と選択解除機能
         let lastClickTime = 0;
         const doubleClickDelay = 300; // ミリ秒
