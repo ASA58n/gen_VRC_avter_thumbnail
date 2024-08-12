@@ -449,54 +449,59 @@
         });
 
 
+        // ダウンロードボタンのイベントリスナー
         downloadBtn.addEventListener('click', function () {
             if (baseImageUploaded) {
                 showLoading();
-
+        
                 const downloadAreaWidth = canvas.width * DISPLAY_SCALE;
                 const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
                 const left = (canvas.width - downloadAreaWidth) / 2;
                 const top = (canvas.height - downloadAreaHeight) / 2;
-
+        
                 // ダークオーバーレイとダウンロードエリアを一時的に非表示にする
                 darkOverlay.visible = false;
                 downloadArea.visible = false;
                 canvas.renderAll();
-
+        
                 // キャンバスの内容を一時的なキャンバスに描画
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = DOWNLOAD_WIDTH;
                 tempCanvas.height = DOWNLOAD_HEIGHT;
                 const tempContext = tempCanvas.getContext('2d');
-
+        
+                // 高解像度で描画するためのスケールを計算
+                const scaleFactor = Math.max(DOWNLOAD_WIDTH / downloadAreaWidth, DOWNLOAD_HEIGHT / downloadAreaHeight);
+        
                 const dataURL = canvas.toDataURL({
                     format: 'png',
                     quality: 1,
                     left: left,
                     top: top,
                     width: downloadAreaWidth,
-                    height: downloadAreaHeight
+                    height: downloadAreaHeight,
+                    multiplier: scaleFactor
                 });
-
+        
                 const img = new Image();
                 img.onload = function () {
                     tempContext.drawImage(img, 0, 0, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
-
+        
                     const format = formatSelect.value;
                     const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-                    const quality = format === 'jpeg' ? 0.9 : 1; // JPEG の場合は品質を指定
+                    const quality = format === 'jpeg' ? 0.95 : 1; // JPEG の場合は品質を指定（0.9から0.95に変更）
                     const finalDataURL = tempCanvas.toDataURL(mimeType, quality);
-
+        
                     const link = document.createElement('a');
                     link.download = `vrc-avatar-thumbnail.${format}`;
                     link.href = finalDataURL;
                     link.click();
-
+        
                     // ダークオーバーレイとダウンロードエリアを再表示する
                     darkOverlay.visible = true;
                     downloadArea.visible = true;
                     canvas.renderAll();
-
+        
                     hideLoading();
                 };
                 img.src = dataURL;
@@ -504,7 +509,6 @@
                 alert('ベース画像をアップロードしてください。');
             }
         });
-
         // オブジェクトの選択と選択解除機能
         let lastClickTime = 0;
         const doubleClickDelay = 300; // ミリ秒
