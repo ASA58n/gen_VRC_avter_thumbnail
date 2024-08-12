@@ -268,7 +268,7 @@
             updateGuideline();
             canvas.renderAll();
         }
-
+        
         function updateGuideline() {
             if (guidelineObject) {
                 canvas.remove(guidelineObject);
@@ -276,7 +276,8 @@
         
             const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
             const top = (canvas.height - downloadAreaHeight) / 2;
-            const lineY = top + downloadAreaHeight - (150 * canvas.height / DOWNLOAD_HEIGHT);
+            // 50ピクセルに変更
+            const lineY = top + downloadAreaHeight - (50 * canvas.height / DOWNLOAD_HEIGHT);
         
             guidelineObject = new fabric.Line([0, lineY, canvas.width, lineY], {
                 stroke: 'rgba(255, 255, 255, 0.2)',
