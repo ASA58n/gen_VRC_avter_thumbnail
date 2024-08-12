@@ -227,6 +227,7 @@
         let downloadArea = null;
         let DOWNLOAD_WIDTH = 1200;
         let DOWNLOAD_HEIGHT = 900;
+        let guidelineObject;
         const DISPLAY_SCALE = 0.7; // 70%のスケール
 
         // サイズ更新ボタンのイベントリスナー
@@ -241,7 +242,7 @@
             const containerWidth = containerRect.width;
             const containerHeight = containerRect.height;
             const aspectRatio = DOWNLOAD_WIDTH / DOWNLOAD_HEIGHT;
-
+        
             let newWidth, newHeight;
             if (containerWidth / containerHeight > aspectRatio) {
                 newHeight = containerHeight;
@@ -250,23 +251,45 @@
                 newWidth = containerWidth;
                 newHeight = newWidth / aspectRatio;
             }
-
+        
             canvas.setDimensions({
                 width: newWidth,
                 height: newHeight
             });
-
+        
             if (baseImage) {
                 const resizedDimensions = resizeImage(baseImage, DOWNLOAD_WIDTH, DOWNLOAD_HEIGHT);
                 baseImage.scaleToWidth(resizedDimensions.width * (newWidth / DOWNLOAD_WIDTH));
                 baseImage.scaleToHeight(resizedDimensions.height * (newHeight / DOWNLOAD_HEIGHT));
                 baseImage.center();
             }
-
+        
             updateDarkOverlay();
+            updateGuideline();
             canvas.renderAll();
         }
-
+        
+        function updateGuideline() {
+            if (guidelineObject) {
+                canvas.remove(guidelineObject);
+            }
+        
+            const downloadAreaHeight = canvas.height * DISPLAY_SCALE;
+            const top = (canvas.height - downloadAreaHeight) / 2;
+            // 50ピクセルに変更
+            const lineY = top + downloadAreaHeight - (75 * canvas.height / DOWNLOAD_HEIGHT);
+        
+            guidelineObject = new fabric.Line([0, lineY, canvas.width, lineY], {
+                stroke: 'rgba(255, 255, 255, 0.2)',
+                strokeWidth: 1,
+                selectable: false,
+                evented: false
+            });
+        
+            canvas.add(guidelineObject);
+            canvas.bringToFront(guidelineObject);
+        }
+        
         // 画像をリサイズする関数
         function resizeImage(img, maxWidth, maxHeight) {
             let width = img.width;
@@ -459,9 +482,10 @@
                 const left = (canvas.width - downloadAreaWidth) / 2;
                 const top = (canvas.height - downloadAreaHeight) / 2;
         
-                // ダークオーバーレイとダウンロードエリアを一時的に非表示にする
+                // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを一時的に非表示にする
                 darkOverlay.visible = false;
                 downloadArea.visible = false;
+                guidelineObject.visible = false;
                 canvas.renderAll();
         
                 // キャンバスの内容を一時的なキャンバスに描画
@@ -489,20 +513,27 @@
         
                     const format = formatSelect.value;
                     const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-                    const quality = format === 'jpeg' ? 0.95 : 1; // JPEG の場合は品質を指定（0.9から0.95に変更）
+                    const quality = format === 'jpeg' ? 0.95 : 1;
                     const finalDataURL = tempCanvas.toDataURL(mimeType, quality);
         
                     const link = document.createElement('a');
                     link.download = `vrc-avatar-thumbnail.${format}`;
                     link.href = finalDataURL;
+                    
+                    // ダウンロードを開始し、完了後に処理を行う
+                    link.onclick = function() {
+                        setTimeout(function() {
+                            // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを再表示する
+                            darkOverlay.visible = true;
+                            downloadArea.visible = true;
+                            guidelineObject.visible = true;
+                            canvas.renderAll();
+        
+                            hideLoading();
+                        }, 100);
+                    };
+                    
                     link.click();
-        
-                    // ダークオーバーレイとダウンロードエリアを再表示する
-                    darkOverlay.visible = true;
-                    downloadArea.visible = true;
-                    canvas.renderAll();
-        
-                    hideLoading();
                 };
                 img.src = dataURL;
             } else {
