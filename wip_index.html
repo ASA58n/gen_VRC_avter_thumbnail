@@ -512,21 +512,27 @@
         
                     const format = formatSelect.value;
                     const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-                    const quality = format === 'jpeg' ? 0.95 : 1; // JPEG の場合は品質を指定（0.9から0.95に変更）
+                    const quality = format === 'jpeg' ? 0.95 : 1;
                     const finalDataURL = tempCanvas.toDataURL(mimeType, quality);
         
                     const link = document.createElement('a');
                     link.download = `vrc-avatar-thumbnail.${format}`;
                     link.href = finalDataURL;
+                    
+                    // ダウンロードを開始し、完了後に処理を行う
                     link.onclick = function() {
-                        // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを再表示する
-                        darkOverlay.visible = true;
-                        downloadArea.visible = true;
-                        guidelineObject.visible = true;
-                        canvas.renderAll();
-            
-                        hideLoading();
+                        setTimeout(function() {
+                            // ダークオーバーレイ、ダウンロードエリア、およびガイドラインを再表示する
+                            darkOverlay.visible = true;
+                            downloadArea.visible = true;
+                            guidelineObject.visible = true;
+                            canvas.renderAll();
+        
+                            hideLoading();
+                        }, 100);
                     };
+                    
+                    link.click();
                 };
                 img.src = dataURL;
             } else {
