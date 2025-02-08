@@ -9,7 +9,7 @@
                 font-size: 144px;
                 stroke-width: 7.3px;
                 stroke-miterlimit: 2;
-                fill: currentColor;
+                fill: none;
                 stroke: currentColor;
             }
             .text-medium {
@@ -18,7 +18,7 @@
                 font-size: 96px;
                 stroke-width: 7.3px;
                 stroke-miterlimit: 2;
-                fill: currentColor;
+                fill: none;
                 stroke: currentColor;
             }
         </style>
