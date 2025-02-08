@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 1205 922" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+    <g transform="matrix(1,0,0,1,-366.678,-468.383)">
+        <g transform="matrix(1,0,0,1,-57.0543,52.093)">
+            <rect x="436.589" y="429.147" width="1178.3" height="895.504" style="fill:none;stroke:black;stroke-width:25.71px;"/>
+        </g>
+        <g transform="matrix(1.2983,0,0,1.2983,-129.044,-244.078)">
+            <g transform="matrix(1.09,0,0,1.2,-36.8372,-143.876)">
+                <text x="409.302px" y="719.38px" style="font-family:'UDDigiKyokashoNK-B', 'UD Digi Kyokasho NK-B';font-weight:700;font-size:144px;fill:none;stroke:black;stroke-width:7.3px;stroke-miterlimit:2;">テスター</text>
+            </g>
+            <g transform="matrix(1.09,0,0,1.2,-63.2828,-168.676)">
+                <text x="703.142px" y="843.38px" style="font-family:'UDDigiKyokashoNK-B', 'UD Digi Kyokasho NK-B';font-weight:700;font-size:96px;fill:none;stroke:black;stroke-width:7.3px;stroke-miterlimit:2;">＆</text>
+            </g>
+            <g transform="matrix(1.09,0,0,1.2,-36.8372,-201.476)">
+                <g transform="matrix(144,0,0,144,1213.68,1007.38)">
+                </g>
+                <text x="409.302px" y="1007.38px" style="font-family:'UDDigiKyokashoNK-B', 'UD Digi Kyokasho NK-B';font-weight:700;font-size:144px;fill:none;stroke:black;stroke-width:7.3px;stroke-miterlimit:2;">アンバサダー</text>
+            </g>
+        </g>
+        <g transform="matrix(1.11859,0,0,1.11859,119.772,490.902)">
+            <g transform="matrix(1.09,0,0,1.2,-36.8372,-143.876)">
+                <g transform="matrix(144,0,0,144,1205.31,719.38)">
+                </g>
+                <text x="409.302px" y="719.38px" style="font-family:'UDDigiKyokashoNK-B', 'UD Digi Kyokasho NK-B';font-weight:700;font-size:144px;fill:none;stroke:black;stroke-width:5.46px;stroke-miterlimit:2;">衣装着用中！</text>
+            </g>
+        </g>
+    </g>
+</svg>
